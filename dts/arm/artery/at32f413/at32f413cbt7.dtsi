@@ -1,0 +1,7 @@
+/*
+ * Copyright (c) 2024 Charlie Palmer
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
+ #include <arm/armv7-m.dtsi>
+ #include <artery/at32f413/at32f413.dtsi>
