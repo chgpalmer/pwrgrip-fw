@@ -1,0 +1,6 @@
+family:
+- name: at32
+  series:
+  - name: at32f413
+    socs:
+    - name: at32f413cb

@@ -1,0 +1,18 @@
+# Copyright (c) 2021, ATL Electronics
+# SPDX-License-Identifier: Apache-2.0
+
+config SOC_SERIES_AT32F413
+	bool
+	select SOC_FAMILY_AT32
+	help
+	  Enable support for Artery AT32F413 MCU series
+
+config SOC_SERIES
+	default "at32f413" if SOC_SERIES_AT32F413
+
+config SOC_AT32F413CBT7
+	bool
+	select SOC_SERIES_AT32F413
+
+config SOC
+	default "at32f413cbt7" if SOC_AT32F413CBT7

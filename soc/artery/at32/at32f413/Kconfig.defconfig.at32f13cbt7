@@ -1,0 +1,13 @@
+# Copyright (c) 2022 TOKITA Hiroshi <tokita.hiroshi@gmail.com>
+# SPDX-License-Identifier: Apache-2.0
+
+if SOC_AT32F413CBT7
+
+# AT32F413 series
+# C=48-pin
+# B=128KB flash
+# U=QFN package
+
+# Add any configs specifically for this chip here.
+
+endif # SOC_AT32F413CBT7
