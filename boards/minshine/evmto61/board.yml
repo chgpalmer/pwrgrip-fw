@@ -1,0 +1,5 @@
+board:
+  name: evmto61
+  vendor: minshine
+  socs:
+    - name: at32f413cbt7

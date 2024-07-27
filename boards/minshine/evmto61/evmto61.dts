@@ -1,0 +1,35 @@
+/*
+ * Copyright (c) 2024 Charlie Palmer
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
+/dts-v1/;
+#include <dts/arm/artery/at32f413/at32f413cbt7.dtsi>
+#include <dts/arm/artery/at32f413/at32f413cbt7-pinctrl.dtsi>
+
+/ {
+	model = "MinShine eVMTO61 board (To7 DM-02)";
+	compatible = "minshine,evmto61";
+
+	chosen {
+		zephyr,console = &usart0;
+		zephyr,shell-uart = &usart0;
+		zephyr,sram = &sram0;
+		zephyr,flash = &flash0;
+	};
+
+    leds {
+		compatible = "gpio-leds";
+		led0: led_0 {
+			gpios = <&gpioa 0 GPIO_ACTIVE_HIGH>;
+			label = "LED 0";
+		};
+	};
+};
+
+&usart0 {
+	pinctrl-0 = <&usart0_tx_pa0 &usart0_rx_pa1>;
+	pinctrl-names = "default";
+	current-speed = <115200>;
+	status = "okay";
+};
