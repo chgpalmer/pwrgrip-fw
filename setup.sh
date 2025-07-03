@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
-
+# setup.sh - Set up or update the pwrgrip-fw Zephyr development environment.
+# This script is idempotent: you can run it to create a new workspace or update/fix an existing one.
 set -e
 
 if [ "$#" -ne 1 ]; then
@@ -7,58 +8,69 @@ if [ "$#" -ne 1 ]; then
     exit 1
 fi
 
+for cmd in python3 pip wget tar; do
+    if ! command -v "$cmd" >/dev/null 2>&1; then
+        echo "Error: '$cmd' is required but not installed."
+        exit 1
+    fi
+done
+
 WORKSPACE_PATH="$1"
-REPO_URL="https://github.com/chgpalmer/ebike-fw"
+REPO_URL="https://github.com/chgpalmer/pwrgrip-fw"
 ZEPHYR_SDK_VERSION="0.16.8"
 SDK_BASE_URL="https://github.com/zephyrproject-rtos/sdk-ng/releases/download/v${ZEPHYR_SDK_VERSION}"
-SDK_FILENAME="zephyr-sdk-${ZEPHYR_SDK_VERSION}_macos-x86_64_minimal.tar.xz"
 
-# Prevent running inside a git clone of the repo
-if [ -f "west.yml" ] && [ -d ".git" ]; then
-    echo "Error: Do not run setup.sh from inside a git clone of the repository."
-    echo "Instead, run it from a separate directory, e.g.:"
-    echo "  mkdir my-workspace && ./setup.sh my-workspace"
-    exit 1
-fi
+UNAME_OUT="$(uname -s)"
+case "${UNAME_OUT}" in
+    Linux*)   SDK_FILENAME="zephyr-sdk-${ZEPHYR_SDK_VERSION}_linux-x86_64_minimal.tar.xz";;
+    Darwin*)  SDK_FILENAME="zephyr-sdk-${ZEPHYR_SDK_VERSION}_macos-x86_64_minimal.tar.xz";;
+    *)        echo "Unsupported OS: ${UNAME_OUT}"; exit 1;;
+esac
 
-# Check if workspace exists and is non-empty
-if [ -d "$WORKSPACE_PATH" ] && [ "$(ls -A "$WORKSPACE_PATH")" ]; then
-    echo "Error: The workspace directory '$WORKSPACE_PATH' already exists and is not empty."
-    echo "Please choose an empty or new directory."
-    exit 1
-fi
-
-# Create workspace directory
 mkdir -p "$WORKSPACE_PATH"
+
+# Prompt if directory is not empty
+if [ "$(ls -A "$WORKSPACE_PATH")" ]; then
+    echo "Warning: The workspace directory '$WORKSPACE_PATH' is not empty."
+    echo "Running this script will (re)initialize Zephyr and related files if missing."
+    read -p "Continue setup in this directory? [y/N]: " yn
+    case "$yn" in
+        [Yy]*) echo "Continuing setup...";;
+        *) echo "Aborting."; exit 1;;
+    esac
+fi
+
 cd "$WORKSPACE_PATH"
 
-# Set up Python virtual environment
-python3 -m venv .venv
+# Set up Python virtual environment if missing
+if [ ! -d ".venv" ]; then
+    python3 -m venv .venv
+fi
 source .venv/bin/activate
 
-# Install west
 pip install --upgrade pip
 pip install west
 
-# Initialize and update west workspace
-west init -m "$REPO_URL"
+# Initialize west workspace if missing
+if [ ! -d ".west" ]; then
+    west init -m "$REPO_URL"
+fi
 west update
 
-# Install Zephyr Python requirements
 pip install -r zephyr/scripts/requirements.txt
 
-# Download and extract Zephyr SDK (macOS minimal version)
+# Download and extract Zephyr SDK if missing
 if [ ! -d "zephyr-sdk-${ZEPHYR_SDK_VERSION}" ]; then
-    curl -LO "${SDK_BASE_URL}/${SDK_FILENAME}"
+    wget -N "${SDK_BASE_URL}/${SDK_FILENAME}"
     tar xvf "${SDK_FILENAME}"
-    rm "${SDK_FILENAME}"
+    rm -f "${SDK_FILENAME}"
     cd "zephyr-sdk-${ZEPHYR_SDK_VERSION}"
-    ./setup.sh -t arm-zephyr-eabi -hc
+    ./setup.sh -t arm-zephyr-eabi -h -c
     cd ..
 fi
 
 echo "Setup complete!"
 echo "To start developing:"
 echo "  source $WORKSPACE_PATH/.venv/bin/activate"
-echo "  cd $WORKSPACE_PATH/ebike-fw"
+echo "  cd $WORKSPACE_PATH/pwrgrip-fw"
 echo "  west build -p auto -b your_board_name"

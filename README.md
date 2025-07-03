@@ -26,7 +26,7 @@ eBike controller firmware for To7 DM-02 motor controller boards. These boards us
 To set up your workspace automatically, just run:
 
 ```sh
-curl -LO https://raw.githubusercontent.com/chgpalmer/ebike-fw/main/setup.sh
+wget https://raw.githubusercontent.com/chgpalmer/pwrgrip-fw/main/setup.sh
 chmod +x setup.sh
 ./setup.sh my-workspace
 rm setup.sh
@@ -43,6 +43,10 @@ This script will:
 
 **Tip:** For VS Code users, install the "C/C++", "CMake Tools", and "GitHub Copilot" extensions for the best experience.
 
+> **Note:**
+> You can safely re-run `setup.sh` in an existing workspace to update or repair your environment.
+> If the directory is not empty, you will be prompted before continuing.
+
 ---
 
 ### Development flow
@@ -51,7 +55,7 @@ Source the environment:
 ```sh
 cd path/to/my-workspace
 source .venv/bin/activate
-cd ebike-fw
+cd pwrgrip-fw
 ```
 
 #### Build
@@ -65,6 +69,13 @@ west flash
 ```
 
 ---
+
+### macOS Troubleshooting
+
+If you see an error about `libunistring` or `wget` when installing the Zephyr SDK, run:
+```sh
+brew install libunistring wget
+```
 
 **Notes:**
 - `west zephyr-export` is only needed if you build with CMake directly, not with `west build`.
