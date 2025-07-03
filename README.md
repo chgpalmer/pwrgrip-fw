@@ -21,34 +21,25 @@ eBike controller firmware for To7 DM-02 motor controller boards. These boards us
 * python3 (and various python packages)
 * Zephyr OS and Zephyr SDK
 
-## Workflow
+## Quick Setup
 
-### Setup flow
-
-The [Zephyr Getting Started Guide](https://docs.zephyrproject.org/latest/develop/getting_started/index.html) pulls in Zephyr with all its history (1GB), all modules (4.5GB), and all toolchains (XGB).
-
-This can be radically reduced by trimming history and unused modules/toolchains. The following is a faster, minimal setup:
+To set up your workspace automatically, just run:
 
 ```sh
-# Go to your workspace root
-cd ~/workspaces/
-
-# Create workspace, download repository and Zephyr dependencies
-mkdir -p ebike-fw-workspace && cd ebike-fw-workspace
-python3 -m venv .venv
-source .venv/bin/activate
-pip install west
-west init -m https://github.com/chgpalmer/ebike-fw  # download this repository
-west update                                         # download Zephyr OS and modules
-pip install -r zephyr/scripts/requirements.txt
-
-# Install Zephyr SDK (choose the correct version for your OS)
-# For macOS:
-wget https://github.com/zephyrproject-rtos/sdk-ng/releases/download/v0.16.8/zephyr-sdk-0.16.8_macos-x86_64_minimal.tar.xz
-tar xvf zephyr-sdk-0.16.8_macos-x86_64_minimal.tar.xz
-cd zephyr-sdk-0.16.8
-./setup.sh -t arm-zephyr-eabi -hc
+curl -LO https://raw.githubusercontent.com/chgpalmer/ebike-fw/main/setup.sh
+chmod +x setup.sh
+./setup.sh my-workspace
+rm setup.sh
 ```
+
+Replace `my-workspace` with your desired workspace directory name.
+
+This script will:
+- Create the workspace directory
+- Set up a Python virtual environment
+- Install west and Zephyr dependencies
+- Download and set up the Zephyr SDK (macOS minimal version)
+- Initialize the project
 
 **Tip:** For VS Code users, install the "C/C++", "CMake Tools", and "GitHub Copilot" extensions for the best experience.
 
@@ -58,7 +49,7 @@ cd zephyr-sdk-0.16.8
 
 Source the environment:
 ```sh
-cd path/to/ebike-fw-workspace
+cd path/to/my-workspace
 source .venv/bin/activate
 cd ebike-fw
 ```
@@ -77,5 +68,5 @@ west flash
 
 **Notes:**
 - `west zephyr-export` is only needed if you build with CMake directly, not with `west build`.
-- Adjust SDK download links for your OS (Linux/macOS).
+- Adjust SDK download links for your OS (Linux/macOS) if needed.
 - For IDE features like code navigation, ensure `compile_commands.json` is generated (Zephyr does this by default).
