@@ -19,14 +19,16 @@ This document distills the PHYPLUS6252 SDK to guide a Zephyr RTOS port, especial
 
 ## 2. Critical Gaps / Must-Have Information
 
-- Full SoC memory map and peripheral register definitions.
-- Pinout, alternate functions, and pinmux configuration.
-- Clock sources, PLL, and clock tree.
-- Power domains, sleep modes, and wakeup sources.
-- Interrupt controller details.
-- Boot sequence, reset behavior, and flash programming.
-- Electrical specs (voltages, currents, timing).
-- Any undocumented peripherals or errata.
+| Requirement                                | Where to Find It                                 |
+|---------------------------------------------|--------------------------------------------------|
+| Full SoC memory map and peripheral registers| Datasheet (Section 3), Peripheral App Notes      |
+| Pinout, alternate functions, pinmux         | Datasheet (Section 2), GPIO App Note             |
+| Clock sources, PLL, clock tree              | Datasheet (Section 3), Peripheral App Notes      |
+| Power domains, sleep modes, wakeup sources  | Datasheet (Section 3), Power Manager App Note    |
+| Interrupt controller details                | Datasheet (Section 3)                            |
+| Boot sequence, reset, flash programming     | Datasheet (Section 3), Security Boot App Note    |
+| Electrical specs (voltages, currents, timing)| Datasheet (Section 5/6)                         |
+| Undocumented peripherals or errata          | Application Notes, SDK Release Notes             |
 
 **If not present in SDK, these must be sourced from datasheets or application notes.**
 

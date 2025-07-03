@@ -60,6 +60,20 @@ This document outlines the step-by-step plan for porting and developing the pwrg
 
 ---
 
+## Documentation Status
+
+- [x] PHYPLUS6252 SoC datasheet (BLE 5.4, full memory map, pinout, electrical specs)
+- [x] Application notes: peripherals, power management, security boot, GPIO, ADC, etc.
+- [x] SDK structure and coverage (`phyplus6252_sdk.md`)
+- [ ] **PB-03 board schematic/datasheet** (needed for pin mapping, external circuitry, board-specific features)
+- [ ] (Optional) ARM Cortex-M0 Technical Reference Manual ([link](https://developer.arm.com/documentation/ddi0432/c/))
+
+**Action:**  
+- Try to obtain the PB-03 board datasheet or schematic from the vendor or hardware team.
+- If not available, document any pin mapping or board quirks you discover during bring-up in `PLAN.md` or a new `NOTES.md`.
+
+---
+
 ## References
 - [Zephyr Board Porting Guide](https://docs.zephyrproject.org/latest/hardware/porting/board_porting.html)
 - [Zephyr SoC Porting Guide](https://docs.zephyrproject.org/latest/hardware/porting/soc_porting.html)
