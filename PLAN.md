@@ -20,40 +20,48 @@ This document outlines the step-by-step plan for porting and developing the pwrg
 
 ---
 
-## 3. **Basic UART Support**
-- [ ] Add UART support in SoC and board files
+## 3. **Leverage Existing Zephyr Peripheral Drivers from FRUSDK**
+- [ ] Identify peripherals present in both PHY6252 and Freqchip (FRUSDK) SoCs (see `frusdk_physdk_comparison.md`)
+- [ ] For peripherals with confirmed compatible register maps (e.g., I2C, WDT, SPI/SSI, DMA SW HANDSHAKE), copy/adapt Zephyr drivers from the `hal_freqchip` Zephyr module repo
+- [ ] Integrate these drivers into the new SoC/HAL layer for PHYPLUS6252
+- [ ] Test each ported driver on pb-03 hardware
+
+---
+
+## 4. **Basic UART Support**
+- [ ] Add UART support in SoC and board files (use Zephyr or port from FRUSDK if compatible)
 - [ ] Implement a simple "hello world" over UART
 - [ ] Confirm serial output works on real hardware
 
 ---
 
-## 4. **GPIO and Board Bring-up**
+## 5. **GPIO and Board Bring-up**
 - [ ] Add basic GPIO support (LEDs, buttons if present)
 - [ ] Test toggling a pin or LED
 
 ---
 
-## 5. **Peripheral Support**
-- [ ] Add SPI/I2C support in SoC and board files
+## 6. **Peripheral Support**
+- [ ] Add/port SPI/I2C support in SoC and board files (reuse FRUSDK Zephyr modules where possible)
 - [ ] Integrate and test HX711 (load cell ADC)
 - [ ] Integrate and test OLED display (I2C/SPI)
 - [ ] Add any other peripherals (e.g., motor drivers, sensors)
 
 ---
 
-## 6. **Application Layer**
+## 7. **Application Layer**
 - [ ] Implement main application logic (read HX711, display on OLED, etc.)
 - [ ] Add command-line or UART-based debug interface if needed
 
 ---
 
-## 7. **Testing and Documentation**
+## 8. **Testing and Documentation**
 - [ ] Add board bring-up and test instructions to `README.md`
 - [ ] Document any quirks or hardware-specific notes in `PLAN.md` or a new `NOTES.md`
 
 ---
 
-## 8. **Cleanup and Maintenance**
+## 9. **Cleanup and Maintenance**
 - [ ] Remove unused code and configs
 - [ ] Tag a "minimal working" commit
 - [ ] Plan next features or improvements
@@ -65,10 +73,11 @@ This document outlines the step-by-step plan for porting and developing the pwrg
 - [x] PHYPLUS6252 SoC datasheet (BLE 5.4, full memory map, pinout, electrical specs)
 - [x] Application notes: peripherals, power management, security boot, GPIO, ADC, etc.
 - [x] SDK structure and coverage (`phyplus6252_sdk.md`)
+- [x] FRUSDK Zephyr HAL module and driver sources
 - [ ] **PB-03 board schematic/datasheet** (needed for pin mapping, external circuitry, board-specific features)
 - [ ] (Optional) ARM Cortex-M0 Technical Reference Manual ([link](https://developer.arm.com/documentation/ddi0432/c/))
 
-**Action:**  
+**Action:**
 - Try to obtain the PB-03 board datasheet or schematic from the vendor or hardware team.
 - If not available, document any pin mapping or board quirks you discover during bring-up in `PLAN.md` or a new `NOTES.md`.
 
@@ -78,6 +87,7 @@ This document outlines the step-by-step plan for porting and developing the pwrg
 - [Zephyr Board Porting Guide](https://docs.zephyrproject.org/latest/hardware/porting/board_porting.html)
 - [Zephyr SoC Porting Guide](https://docs.zephyrproject.org/latest/hardware/porting/soc_porting.html)
 - [Zephyr HAL Integration](https://docs.zephyrproject.org/latest/hardware/porting/hal_porting.html)
+- [FRUSDK Zephyr HAL module (Freqchip)](https://github.com/Freqchip/zephyr-hal-fr30xx) <!-- update with actual repo if needed -->
 
 ---
 
