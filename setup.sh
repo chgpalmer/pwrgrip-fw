@@ -1,28 +1,85 @@
 #!/usr/bin/env bash
 # setup.sh - Set up or update the pwrgrip-fw Zephyr development environment.
-set -e
+set -eu
 
 if [ "$#" -ne 1 ]; then
     echo "Usage: $0 <workspace-path>"
     exit 1
 fi
 
-for cmd in python3 pip wget tar git; do
+print_header() {
+    local msg="$1"
+    echo
+    echo "========== $msg =========="
+}
+
+# Helper to run commands quietly unless VERBOSE=1
+run_cmd() {
+    local cmd_str="${*}"
+    if [ ${#cmd_str} -gt 60 ]; then
+        cmd_str="${cmd_str:0:57}..."
+    fi
+    printf "  %-60s " "$cmd_str"
+
+    # Use a temp file to capture all output
+    local tmpfile
+    tmpfile=$(mktemp)
+    python3 -c "
+import subprocess, sys
+with open('$tmpfile', 'w') as f:
+    p = subprocess.Popen(sys.argv[1:], stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True)
+    last = ''
+    while True:
+        line = p.stdout.readline()
+        if not line and p.poll() is not None:
+            break
+        if line:
+            last = line.rstrip()
+            sys.stdout.write('\r  %-60s' % last[:57])
+            sys.stdout.flush()
+            f.write(line)
+    ret = p.wait()
+    sys.exit(ret)
+" "$@"
+    local status=$?
+    if [ $status -eq 0 ]; then
+        printf "\r  %-60s [\033[0;32mOK\033[0m]\n" "$cmd_str"
+    else
+        printf "\r  %-60s [\033[0;31mFAIL\033[0m]\n" "$cmd_str"
+        echo "---- Command output ----"
+        cat "$tmpfile"
+        echo "------------------------"
+    fi
+    rm -f "$tmpfile"
+    return $status
+}
+
+ZEPHYR_DEPS="python3 pip tar git"
+ARM_TOOLCHAIN_DEPS="wget"
+OPENOCD_DEPS="aclocal jimsh"
+DEPS="$ZEPHYR_DEPS $ARM_TOOLCHAIN_DEPS $OPENOCD_DEPS"
+for cmd in $DEPS; do
     if ! command -v "$cmd" >/dev/null 2>&1; then
         echo "Error: '$cmd' is required but not installed."
         exit 1
     fi
 done
-
-WORKSPACE_PATH="$1"
+# Check for hidapi development files (needed for CMSIS-DAP HID support in OpenOCD)
+if ! pkg-config --exists hidapi; then
+    echo "Error: 'hidapi' development files are required for CMSIS-DAP HID support."
+    echo "  On Ubuntu/Debian: sudo apt-get install libhidapi-dev"
+    echo "  On macOS: brew install hidapi"
+    exit 1
+fi
+WORKSPACE_PATH=`realpath "$1"`
 REPO_URL="https://github.com/chgpalmer/pwrgrip-fw"
 ZEPHYR_SDK_VERSION="0.16.8"
 SDK_BASE_URL="https://github.com/zephyrproject-rtos/sdk-ng/releases/download/v${ZEPHYR_SDK_VERSION}"
 
-# --- OpenOCD settings ---
 OPENOCD_REPO="https://github.com/chgpalmer/openocd.git"
-OPENOCD_BRANCH="master"
+OPENOCD_BRANCH="phyplus6252"
 OPENOCD_DIR="openocd"
+NPROC=$(command -v nproc >/dev/null 2>&1 && nproc || sysctl -n hw.ncpu)
 
 UNAME_OUT="$(uname -s)"
 case "${UNAME_OUT}" in
@@ -35,9 +92,8 @@ mkdir -p "$WORKSPACE_PATH"
 
 # Prompt if directory is not empty
 if [ "$(ls -A "$WORKSPACE_PATH")" ]; then
-    echo "Warning: The workspace directory '$WORKSPACE_PATH' is not empty."
-    echo "Running this script will (re)initialize Zephyr and related files if missing."
-    read -p "Continue setup in this directory? [y/N]: " yn
+    echo "Workspace is not empty, running this script will setup any missing project files."
+    read -p "Continue setup in $WORKSPACE_PATH? [y/N]: " yn
     case "$yn" in
         [Yy]*) echo "Continuing setup...";;
         *) echo "Aborting."; exit 1;;
@@ -46,47 +102,65 @@ fi
 
 cd "$WORKSPACE_PATH"
 
-# Set up Python virtual environment if missing
+# --- Cleanup logic ---
+CURRENT_SETUP_DIR=""
+cleanup_on_exit() {
+    if [ -n "$CURRENT_SETUP_DIR" ] && [ -d "$CURRENT_SETUP_DIR" ]; then
+        echo "Cleaning up incomplete directory: $CURRENT_SETUP_DIR"
+        rm -rf "$CURRENT_SETUP_DIR"
+    fi
+}
+trap cleanup_on_exit EXIT
+
+# --- Python virtual environment setup ---
+print_header "Setting up Python virtual environment..."
 if [ ! -d ".venv" ]; then
-    python3 -m venv .venv
+    run_cmd python3 -m venv .venv
 fi
 source .venv/bin/activate
 
-pip install --upgrade pip
-pip install west
+# --- Python dependencies ---
+echo
+echo "Installing Python dependencies..."
+run_cmd pip install --upgrade pip
+run_cmd pip install west
+run_cmd pip install -r zephyr/scripts/requirements.txt
 
-# Initialize west workspace if missing
+# --- Zephyr west workspace setup ---
+print_header "Initializing Zephyr west workspace..."
 if [ ! -d ".west" ]; then
-    west init -m "$REPO_URL"
+    run_cmd west init -m "$REPO_URL"
 fi
-west update
+run_cmd west update
 
-pip install -r zephyr/scripts/requirements.txt
-
-# Download and extract Zephyr SDK if missing
+# --- Zephyr SDK setup ---
+print_header "Building Zephyr SDK..."
 if [ ! -d "zephyr-sdk-${ZEPHYR_SDK_VERSION}" ]; then
-    wget -N "${SDK_BASE_URL}/${SDK_FILENAME}"
-    tar xvf "${SDK_FILENAME}"
-    rm -f "${SDK_FILENAME}"
+    CURRENT_SETUP_DIR="zephyr-sdk-${ZEPHYR_SDK_VERSION}"
+    run_cmd wget -N "${SDK_BASE_URL}/${SDK_FILENAME}"
+    run_cmd tar xvf "${SDK_FILENAME}"
+    run_cmd rm -f "${SDK_FILENAME}"
     cd "zephyr-sdk-${ZEPHYR_SDK_VERSION}"
-    ./setup.sh -t arm-zephyr-eabi -h -c
+    run_cmd ./setup.sh -t arm-zephyr-eabi -h -c
     cd ..
 fi
 
-# Clone and build OpenOCD with custom PHYPLUS6252 driver
+# --- OpenOCD build ---
+print_header "Building custom OpenOCD..."
 if [ ! -d "$OPENOCD_DIR" ]; then
-    git clone "$OPENOCD_REPO" "$OPENOCD_DIR"
+    CURRENT_SETUP_DIR="$OPENOCD_DIR"
+    run_cmd git clone "$OPENOCD_REPO" "$OPENOCD_DIR"
     cd "$OPENOCD_DIR"
-    git checkout "$OPENOCD_BRANCH"
-    ./bootstrap
-    ./configure --enable-cmsis-dap
-    make -j$(nproc)
+    run_cmd git checkout "$OPENOCD_BRANCH"
+    run_cmd ./bootstrap
+    run_cmd ./configure --enable-cmsis-dap
+    run_cmd make -j"$NPROC"
     cd ..
-else
-    echo "OpenOCD directory already exists, skipping clone/build."
 fi
 
-echo "Setup complete!"
+CURRENT_SETUP_DIR=""
+
+print_header "Setup complete!"
 echo "To start developing:"
 echo "  source $WORKSPACE_PATH/.venv/bin/activate"
 echo "  cd $WORKSPACE_PATH/pwrgrip-fw"
