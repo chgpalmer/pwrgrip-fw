@@ -37,10 +37,10 @@ This project targets Zephyr RTOS and supports custom hardware including load cel
 To set up your workspace, run:
 
 ```sh
+mkdir pwrgrip-fw-workspace && cd pwrgrip-fw-workspace
 wget https://raw.githubusercontent.com/chgpalmer/pwrgrip-fw/main/setup.sh
 chmod +x setup.sh
-mkdir my-workspace && ./setup.sh my-workspace
-rm setup.sh
+./setup.sh .
 ```
 
 This script will:

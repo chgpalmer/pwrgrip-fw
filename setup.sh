@@ -13,64 +13,29 @@ print_header() {
     echo "========== $msg =========="
 }
 
-# Helper to run commands quietly unless VERBOSE=1
+# Function to run commands and handle output
 run_cmd() {
     local cmd_str="${*}"
     if [ ${#cmd_str} -gt 60 ]; then
         cmd_str="${cmd_str:0:57}..."
     fi
-    printf "  %-60s " "$cmd_str"
-
-    # Use a temp file to capture all output
+    # Print command, but don't add newline yet
+    echo -n "  $cmd_str"
     local tmpfile
     tmpfile=$(mktemp)
-    python3 -c "
-import subprocess, sys
-with open('$tmpfile', 'w') as f:
-    p = subprocess.Popen(sys.argv[1:], stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True)
-    last = ''
-    while True:
-        line = p.stdout.readline()
-        if not line and p.poll() is not None:
-            break
-        if line:
-            last = line.rstrip()
-            sys.stdout.write('\r  %-60s' % last[:57])
-            sys.stdout.flush()
-            f.write(line)
-    ret = p.wait()
-    sys.exit(ret)
-" "$@"
-    local status=$?
-    if [ $status -eq 0 ]; then
-        printf "\r  %-60s [\033[0;32mOK\033[0m]\n" "$cmd_str"
+    # Run command, capture all output
+    if "$@" >"$tmpfile" 2>&1; then
+        printf " %*s[\033[0;32mOK\033[0m]\n" $((60 - ${#cmd_str})) ""
     else
-        printf "\r  %-60s [\033[0;31mFAIL\033[0m]\n" "$cmd_str"
+        printf " %*s[\033[0;31mFAIL\033[0m]\n" $((60 - ${#cmd_str})) ""
         echo "---- Command output ----"
         cat "$tmpfile"
-        echo "------------------------"
+        rm -f "$tmpfile"
+        return 1
     fi
     rm -f "$tmpfile"
-    return $status
 }
 
-ZEPHYR_DEPS="python3 pip tar git"
-ARM_TOOLCHAIN_DEPS="wget"
-OPENOCD_DEPS="aclocal jimsh"
-DEPS="$ZEPHYR_DEPS $ARM_TOOLCHAIN_DEPS $OPENOCD_DEPS"
-for cmd in $DEPS; do
-    if ! command -v "$cmd" >/dev/null 2>&1; then
-        echo "Error: '$cmd' is required but not installed."
-        exit 1
-    fi
-done
-# Check for hidapi development files (needed for CMSIS-DAP HID support in OpenOCD)
-if ! pkg-config --exists hidapi; then
-    echo "Error: 'hidapi' development files are required for CMSIS-DAP HID support."
-    echo "  On Ubuntu/Debian: sudo apt-get install libhidapi-dev"
-    echo "  On macOS: brew install hidapi"
-    exit 1
-fi
 WORKSPACE_PATH=`realpath "$1"`
 REPO_URL="https://github.com/chgpalmer/pwrgrip-fw"
 ZEPHYR_SDK_VERSION="0.16.8"
@@ -90,9 +55,10 @@ esac
 
 mkdir -p "$WORKSPACE_PATH"
 
-# Prompt if directory is not empty
-if [ "$(ls -A "$WORKSPACE_PATH")" ]; then
+# Prompt if directory is not empty (excluding expected items)
+if ls -A1 | grep -vE "(setup.sh|.venv|.west|zephyr|pwrgrip-fw|openocd|modules)"; then
     echo "Workspace is not empty, running this script will setup any missing project files."
+    ls -1 "$WORKSPACE_PATH" | xargs -I {} echo "  - {}"
     read -p "Continue setup in $WORKSPACE_PATH? [y/N]: " yn
     case "$yn" in
         [Yy]*) echo "Continuing setup...";;
@@ -105,9 +71,10 @@ cd "$WORKSPACE_PATH"
 # --- Cleanup logic ---
 CURRENT_SETUP_DIR=""
 cleanup_on_exit() {
+    cd "$WORKSPACE_PATH"
     if [ -n "$CURRENT_SETUP_DIR" ] && [ -d "$CURRENT_SETUP_DIR" ]; then
         echo "Cleaning up incomplete directory: $CURRENT_SETUP_DIR"
-        rm -rf "$CURRENT_SETUP_DIR"
+        rm -rf -- "$CURRENT_SETUP_DIR"
     fi
 }
 trap cleanup_on_exit EXIT
@@ -120,18 +87,22 @@ fi
 source .venv/bin/activate
 
 # --- Python dependencies ---
-echo
-echo "Installing Python dependencies..."
+print_header "Installing Python dependencies..."
 run_cmd pip install --upgrade pip
 run_cmd pip install west
-run_cmd pip install -r zephyr/scripts/requirements.txt
 
 # --- Zephyr west workspace setup ---
 print_header "Initializing Zephyr west workspace..."
 if [ ! -d ".west" ]; then
+    CURRENT_SETUP_DIR=".west"
     run_cmd west init -m "$REPO_URL"
+    west update
+    CURRENT_SETUP_DIR=""
 fi
-run_cmd west update
+# --- Zephyr west workspace setup ---
+
+print_header "Installing zephyr dependencies..."
+run_cmd pip install -r zephyr/scripts/requirements.txt
 
 # --- Zephyr SDK setup ---
 print_header "Building Zephyr SDK..."
@@ -152,8 +123,9 @@ if [ ! -d "$OPENOCD_DIR" ]; then
     run_cmd git clone "$OPENOCD_REPO" "$OPENOCD_DIR"
     cd "$OPENOCD_DIR"
     run_cmd git checkout "$OPENOCD_BRANCH"
+    run_cmd git submodule update --init --recursive
     run_cmd ./bootstrap
-    run_cmd ./configure --enable-cmsis-dap
+    run_cmd ./configure --enable-cmsis-dap --enable-internal-jimtcl
     run_cmd make -j"$NPROC"
     cd ..
 fi
