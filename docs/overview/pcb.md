@@ -130,8 +130,6 @@ It features the Ai-Thinker PB-03 BLE module (PHYPLUS6252 SoC), USB-C power and d
 
 ## MC Pin Mapping
 
-**Pin-to-Pad Mapping (from PCB layout):**
-
 | PCB Pad / Signal | PB-03 Pin | SoC Pin | Function                                      |
 |------------------|-----------|---------|-----------------------------------------------|
 | 3V3              | 3         | 3V3     | Resgulated power supply (input to module)      |
@@ -147,12 +145,19 @@ It features the Ai-Thinker PB-03 BLE module (PHYPLUS6252 SoC), USB-C power and d
 | SWD_CLK          | 23        | P3      | Serial Wire Debug clock (programming)         |
 | SW1              | 27        | P34     | Tactile button (e.g. Tare or Mode)            |
 | SW2              | 29        | P23     | Tactile button (e.g. Clear or Power toggle)   |
+| UART_RX          | 30        | P10     | Not connected on PCB; available on module     |
+| UART_TX          | 31        | P9      | Not connected on PCB; available on module     |
 
 **Notes:**
 - CHRG tied directly to GND suggests passive LED status indicator only, not software-readable.
 - STDBY is left unconnected, so no standby status is fed to the MCU.
 - SWD_IO and SWD_CLK give you solid in-system programming/debug options alongside USB.
 - The I²C lines (P16, P17) are routed cleanly to the OLED footprint via short traces—well done!
+
+**Note:**  
+- The UART RX/TX pins are **not routed to any connector or test point on the PCB**. Only SWD (P2/P3) is connected for programming and debugging.
+- For serial console or Zephyr shell access, you must solder wires directly to the PB-03 module UART pins (P10/P9).
+- SWD is sufficient for flashing and debugging, but UART is recommended for runtime logs and shell access.
 ---
 
 ## Power
@@ -198,6 +203,8 @@ It features the Ai-Thinker PB-03 BLE module (PHYPLUS6252 SoC), USB-C power and d
 - [ ] Add photos or layout images if available.
 - [ ] Add OLED and other external module details as available.
 - [ ] Pin mapping and schematic details to be added.
+- [ ] UART pins (P9/P10) are not routed on the PCB. For serial output or Zephyr shell, manual soldering to module pins is required.
+- [ ] SWD is available for flashing and debugging.
 
 ---
 
