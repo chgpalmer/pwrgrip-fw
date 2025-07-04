@@ -1,6 +1,5 @@
 #!/usr/bin/env bash
 # setup.sh - Set up or update the pwrgrip-fw Zephyr development environment.
-# This script is idempotent: you can run it to create a new workspace or update/fix an existing one.
 set -e
 
 if [ "$#" -ne 1 ]; then
@@ -8,7 +7,7 @@ if [ "$#" -ne 1 ]; then
     exit 1
 fi
 
-for cmd in python3 pip wget tar; do
+for cmd in python3 pip wget tar git; do
     if ! command -v "$cmd" >/dev/null 2>&1; then
         echo "Error: '$cmd' is required but not installed."
         exit 1
@@ -19,6 +18,11 @@ WORKSPACE_PATH="$1"
 REPO_URL="https://github.com/chgpalmer/pwrgrip-fw"
 ZEPHYR_SDK_VERSION="0.16.8"
 SDK_BASE_URL="https://github.com/zephyrproject-rtos/sdk-ng/releases/download/v${ZEPHYR_SDK_VERSION}"
+
+# --- OpenOCD settings ---
+OPENOCD_REPO="https://github.com/chgpalmer/openocd.git"
+OPENOCD_BRANCH="master"
+OPENOCD_DIR="openocd"
 
 UNAME_OUT="$(uname -s)"
 case "${UNAME_OUT}" in
@@ -69,8 +73,24 @@ if [ ! -d "zephyr-sdk-${ZEPHYR_SDK_VERSION}" ]; then
     cd ..
 fi
 
+# Clone and build OpenOCD with custom PHYPLUS6252 driver
+if [ ! -d "$OPENOCD_DIR" ]; then
+    git clone "$OPENOCD_REPO" "$OPENOCD_DIR"
+    cd "$OPENOCD_DIR"
+    git checkout "$OPENOCD_BRANCH"
+    ./bootstrap
+    ./configure --enable-cmsis-dap
+    make -j$(nproc)
+    cd ..
+else
+    echo "OpenOCD directory already exists, skipping clone/build."
+fi
+
 echo "Setup complete!"
 echo "To start developing:"
 echo "  source $WORKSPACE_PATH/.venv/bin/activate"
 echo "  cd $WORKSPACE_PATH/pwrgrip-fw"
 echo "  west build -p auto -b your_board_name"
+echo ""
+echo "To use your custom OpenOCD:"
+echo "  $WORKSPACE_PATH/openocd/src/openocd -f interface/cmsis-dap.cfg -f target/phyplus6252.cfg"
