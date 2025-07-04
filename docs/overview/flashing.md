@@ -7,7 +7,8 @@ This guide summarizes the current state and options for programming and debuggin
 ## Overview
 
 - **SWD (SIO/SDT) pins** are connected on the PCB for ARM debug access.
-- **OpenOCD** with a CMSIS-DAP adapter and the `stm32f0x.cfg` target can connect and debug the ARM Cortex-M0 core, but cannot program internal flash without a custom driver.
+- **OpenOCD** with a CMSIS-DAP adapter and the `phyplus6252.cfg` target can connect and debug the ARM Cortex-M0 core.  
+- **A custom OpenOCD flash driver (`phyplus6252_flash.c`) and target config (`phyplus6252.cfg`) have been implemented and added to the OpenOCD fork.**  
 - **UART** (P9/P10) is available on the module (not routed on PCB, but can be soldered) for serial console (stdout/Zephyr shell) and possibly UART bootloader flashing.
 - **Vendor tools** (Keil/J-Link with `.FLM` file, or Windows GUI tools) are the manufacturer’s intended methods for flashing and debugging.
 - **BLE OTA** is possible after a bootloader is running.
@@ -28,7 +29,7 @@ This guide summarizes the current state and options for programming and debuggin
 
 | Method         | Debug | Flash | VS Code Integration | Notes                                 |
 |----------------|-------|-------|---------------------|---------------------------------------|
-| **OpenOCD**        | Yes   | No*   | Yes (Cortex-Debug)  | *Needs custom flash driver            |
+| **OpenOCD**        | Yes   | Yes*  | Yes (Cortex-Debug)  | *Custom flash driver and target config implemented, untested |
 | **Keil MDK/J-Link**| Yes   | Yes   | Yes (via tasks)     | Use provided `.FLM` file              |
 | **Vendor Tool**    | No    | Yes   | Yes (via tasks)     | Windows only, less integrated         |
 | **UART Bootloader**| No    | Yes   | Yes (via tasks)     | May require special boot pin/sequence |
@@ -36,21 +37,20 @@ This guide summarizes the current state and options for programming and debuggin
 
 ---
 
-## OpenOCD Flashing: Feasibility and Next Steps
+## OpenOCD Flashing: Status and Next Steps
 
-### Key Observations
+### Current Status
 
-- The PHYPLUS6252 internal flash controller is **not** STM32/Nordic/ARM proprietary, but is **very similar to a generic QSPI/SPI NOR controller** (e.g., Synopsys DesignWare QSPI).
-- All flash operations are performed by issuing JEDEC SPI NOR commands via the `AP_SPIF` controller.
-- The SDK’s `flash.c`/`flash.h` are the best reference for the programming sequence and register usage.
+- **A custom OpenOCD flash driver (`phyplus6252_flash.c`) and target config (`phyplus6252.cfg`) have been added to the OpenOCD fork.**
+- The driver implements JEDEC SPI NOR command sequences as per the SDK.
+- The driver and config are **untested** on real hardware.
 
-### What to Do Next
+### Next Steps
 
-1. **Compare the `AP_SPIF_TypeDef` register map** with OpenOCD’s existing QSPI/SPI NOR drivers (e.g., `dw_qspi.c`, `zynq_qspi.c`, `cfi.c`).
-2. **If the register map matches**, try adapting an existing OpenOCD driver for the PHYPLUS6252.
-3. **If not**, use the SDK’s programming sequence as a reference to write a new OpenOCD flash driver.
-4. **Handle cache bypass/reset** as in the SDK, if required.
-5. **Be aware of possible security/bootloader restrictions** that could block direct programming.
+1. **Test the new OpenOCD flash driver and target config on real hardware.**
+2. Verify that flash probe, erase, program, and verify operations work as expected.
+3. Document any issues, quirks, or required changes in this file.
+4. Update the table above and recommendations as results come in.
 
 ---
 
@@ -76,6 +76,8 @@ This guide summarizes the current state and options for programming and debuggin
 | File/Folder                                                                 | Purpose                                               |
 |-----------------------------------------------------------------------------|-------------------------------------------------------|
 | phy6252-SDK/components/driver/flash/flash.c, flash.h                        | Internal flash driver (primary source for OpenOCD driver) |
+| openocd/src/flash/nor/phyplus6252_flash.c                                   | Custom OpenOCD flash driver for PHYPLUS6252           |
+| openocd/src/target/phyplus6252.cfg                                          | OpenOCD target config for PHYPLUS6252                 |
 | phy6252-SDK/components/driver/spiflash/                                     | External SPI flash (not for code)                     |
 | hal_freqchip/fr30xx_c/components/drivers/peripheral/Inc/driver_flash.h      | Freqchip internal flash driver (compare for compatibility) |
 | core_bumbee_m0.h, mcu_phy_bumbee.h                                         | SoC memory map, peripheral base addresses, register structs |
@@ -86,9 +88,9 @@ This guide summarizes the current state and options for programming and debuggin
 ## Recommendations
 
 - **Short Term:**  
-  Use Keil/J-Link tools for flashing and debugging. Integrate with VS Code using tasks or scripts. Use OpenOCD for RAM debugging only (no flash) unless you find or write a compatible flash driver.
+  Use Keil/J-Link tools for flashing and debugging if OpenOCD flashing is not yet working. Integrate with VS Code using tasks or scripts. Use OpenOCD for RAM debugging only if flash programming fails.
 - **Medium Term:**  
-  Investigate the internal flash controller and attempt to write or adapt an OpenOCD flash driver. Compare with Freqchip/FR30xx for compatibility.
+  Test and debug the new OpenOCD flash driver and target config. Update this document with results and any required fixes.
 - **UART:**  
   Solder wires to UART pins for serial output and possible UART bootloader flashing.
 - **Document:**  
@@ -134,4 +136,4 @@ Info : Listening on port 6666 for tcl connections
 ---
 
 **Summary:**  
-You can debug with OpenOCD now, but cannot program flash without a custom driver. Use Keil/J-Link tools for flashing for now. If you want full OpenOCD support, you’ll need to investigate the flash controller and possibly write a driver—be aware of possible bootloader/security restrictions. UART is highly recommended for serial output and may be usable for flashing if supported by the bootloader. Document your findings as you go!
+A custom OpenOCD flash driver and target config are now implemented and ready for testing. The next step is to test flashing on real hardware and document the results and any issues
