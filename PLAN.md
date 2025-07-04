@@ -4,19 +4,19 @@ This document outlines the step-by-step plan for porting and developing the pwrg
 
 ---
 
-## 1. **Initial Cleanup**
-- [ ] Remove or archive old board/SoC files (MinShine, AT32, STM32, etc.)
-- [ ] Clean up `west.yml` and other config files to remove unused modules
-
----
-
-## 2. **Minimal Buildable Stub**
+## 1. **Minimal Buildable Stub**
 - [ ] Create a new board definition for `pb_03` under `boards/`
 - [ ] Create a new SoC definition for `phyplus6252` under `soc/`
 - [ ] Add minimal DTS, Kconfig, and CMake files for board and SoC
 - [ ] Integrate the Keil SDK as a HAL module (stub out as needed)
 - [ ] Add a minimal `main.c` that just builds (e.g., empty main loop)
 - [ ] Confirm you can build with `west build -b pb_03`
+
+---
+
+## 2. **Initial Cleanup**
+- [ ] Remove or archive old board/SoC files (MinShine, AT32, STM32, etc.)
+- [ ] Clean up `west.yml` and other config files to remove unused modules
 
 ---
 
