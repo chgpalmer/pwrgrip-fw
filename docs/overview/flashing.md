@@ -111,26 +111,33 @@ This guide summarizes the current state and options for programming and debuggin
 
 openocd output:
 <pre>
-Open On-Chip Debugger 0.12.0+dev (2023-12-19-08:57)
+$ ./src/openocd -s tcl -f interface/cmsis-dap.cfg -f target/phyplus6252.cfg
+Open On-Chip Debugger 0.12.0+dev-g9737f0740 (2025-07-04-19:28)
 Licensed under GNU GPL v2
 For bug reports, read
-    http://openocd.org/doc/doxygen/bugs.html
-Info : auto-selecting first available session transport "swd". To override use 'transport select <transport>'.
-Info : clock speed 1000 kHz
+        http://openocd.org/doc/doxygen/bugs.html
+Warn : DEPRECATED: auto-selecting transport "swd". Use 'transport select swd' to suppress this message.
+Warn : Transport "swd" was already selected
+none separate
+Info : Listening on port 6666 for tcl connections
+Info : Listening on port 4444 for telnet connections
+Info : Using CMSIS-DAPv2 interface with VID:PID=0x0d28:0x0204, serial=00000080002900773900000e4e54514aa5a5a5a597969908
 Info : CMSIS-DAP: SWD supported
-Info : CMSIS-DAP: FW Version = 2.0.0
-Info : CMSIS-DAP: Serial# = 0001A0000002
+Info : CMSIS-DAP: SWO-UART supported
+Info : CMSIS-DAP: Atomic commands supported
+Info : CMSIS-DAP: Test domain timer supported
+Info : CMSIS-DAP: FW Version = 2.1.0
+Info : CMSIS-DAP: Serial# = 00000080002900773900000e4e54514aa5a5a5a597969908
 Info : CMSIS-DAP: Interface Initialised (SWD)
-Info : SWCLK/TCK = 1000 kHz
+Info : SWCLK/TCK = 1 SWDIO/TMS = 1 TDI = 0 TDO = 0 nTRST = 0 nRESET = 1
 Info : CMSIS-DAP: Interface ready
-Info : Hardware thread awareness created
 Info : clock speed 1000 kHz
 Info : SWD DPIDR 0x0bb11477
-Info : PHYplus PHY6222.cpu: hardware has 4 breakpoints, 2 watchpoints
-Info : starting gdb server for PHYplus PHY6222.cpu on 3333
+Info : [phyplus6252.cpu] Cortex-M0 r0p0 processor detected
+Info : [phyplus6252.cpu] target has 4 breakpoints, 2 watchpoints
+Info : [phyplus6252.cpu] Examination succeed
+Info : [phyplus6252.cpu] starting gdb server on 3333
 Info : Listening on port 3333 for gdb connections
-Info : Listening on port 4444 for telnet connections
-Info : Listening on port 6666 for tcl connections
 </pre>
 
 ---
