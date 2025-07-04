@@ -171,6 +171,69 @@ e907c7b41754a060d34a62853cb23de8
 
 Describes the use of tools and the security boot process.
 
+<pre>
+┌───────────────────────────────┐
+│           Start               │
+│     (上电 / Reset device)     │
+└──────────────┬────────────────┘
+               │
+               ▼
+┌───────────────────────────────┐
+│ Check TM Pin:                 │
+│ - TM = 0 → Normal Boot        │
+│ - TM = 1 → Debug/Programming  │
+└────┬───────────────────────┬─┘
+     │                       │
+     ▼                       ▼
+┌────────────┐       ┌────────────────────────────┐
+│ TM = 0     │       │ TM = 1                     │
+│ Normal Boot│       │ - Load Programmer UI       │
+└────┬───────┘       │ - Support Flash + Fuse ops │
+     │               └────────────┬───────────────┘
+     ▼                            ▼
+┌──────────────────────────────┐  Step 2
+│ Read eFuses:                 │  ──────────────────────────────
+│ - Secure Boot Enable Flag    │  Select OTA/No OTA App Firmware
+│ - MIC Verification Required? │  Double-click HEX + .sec.csv
+└────┬─────────────────────────┘  ──────────────────────────────
+     │
+     ▼
+┌─────────────────────────────┐  Step 3
+│ If Secure Boot Enabled:     │  ──────────────────────────────
+│ → Perform MIC Verification  │  Click Erase → Send erase cmd
+│ Else:                       │  If response = OK:
+│ → Skip Verification         │     Proceed to Step 6
+└────┬────────────────────────┘  Else: Return to Step 2
+     │
+     ▼
+┌────────────────────────────┐   Step 6
+│ Load Application Firmware  │   ──────────────────────────────
+│ (.hex + .csv as needed)    │   Click Write → Begin flash
+└────┬───────────────────────┘   If flash = FAIL: retry
+     │                             Else: Step 8
+     ▼
+┌────────────────────────────┐   Step 8
+│ Write eFuse Keys (optional)│   ──────────────────────────────
+│ (efuse_wr.csv if provided) │   Burn eFuse Keys
+└────┬───────────────────────┘   If FAIL: retry
+     │                             Else:
+     ▼
+┌────────────────────────────┐
+│ TM = 0 / Reset Device      │
+│ Reboot from Flash Image    │
+└────┬───────────────────────┘
+     ▼
+┌────────────────────────────┐
+│ Secure Boot Validation     │
+│ If Enabled, Validate MIC   │
+└────┬───────────────────────┘
+     ▼
+┌────────────────────────────┐
+│      Boot Application      │
+│         (Success!)         │
+└────────────────────────────┘
+</pre>
+
 ### 4.1 Process Details
 
 1. Power on PHY6252/PHY6222, connect via DWC (TM=0), reset the board to enter programming mode (`cmd>>:`).
