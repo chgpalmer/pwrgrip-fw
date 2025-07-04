@@ -4,13 +4,21 @@ This document outlines the step-by-step plan for porting and developing the pwrg
 
 ---
 
+## 0. **Document Hardware Context**
+- [ ] Document the pb03 module (SoC, crystal, flash, etc.) and its pinout.
+- [ ] Document your custom PCB: all peripherals (USB-C, HX711, OLED, etc.), connections, and any special requirements.
+- [ ] Record pin mappings between the SoC/module and your peripherals.
+- [ ] Use `docs/pcb.md` for this documentation (see scaffold below).
+
+---
+
 ## 1. **Minimal Buildable Stub**
-- [ ] Create a new board definition for `pb_03` under `boards/`
+- [ ] Create a new board definition for your custom PCB (e.g., `my_pcb`) under `boards/`
 - [ ] Create a new SoC definition for `phyplus6252` under `soc/`
 - [ ] Add minimal DTS, Kconfig, and CMake files for board and SoC
 - [ ] Integrate the Keil SDK as a HAL module (stub out as needed)
 - [ ] Add a minimal `main.c` that just builds (e.g., empty main loop)
-- [ ] Confirm you can build with `west build -b pb_03`
+- [ ] Confirm you can build with `west build -b my_pcb`
 
 ---
 
@@ -24,7 +32,7 @@ This document outlines the step-by-step plan for porting and developing the pwrg
 - [ ] Identify peripherals present in both PHY6252 and Freqchip (FRUSDK) SoCs (see `frusdk_physdk_comparison.md`)
 - [ ] For peripherals with confirmed compatible register maps (e.g., I2C, WDT, SPI/SSI, DMA SW HANDSHAKE), copy/adapt Zephyr drivers from the `hal_freqchip` Zephyr module repo
 - [ ] Integrate these drivers into the new SoC/HAL layer for PHYPLUS6252
-- [ ] Test each ported driver on pb-03 hardware
+- [ ] Test each ported driver on your custom PCB hardware
 
 ---
 
@@ -75,11 +83,12 @@ This document outlines the step-by-step plan for porting and developing the pwrg
 - [x] SDK structure and coverage (`phyplus6252_sdk.md`)
 - [x] FRUSDK Zephyr HAL module and driver sources
 - [ ] **PB-03 board schematic/datasheet** (needed for pin mapping, external circuitry, board-specific features)
+- [ ] **Custom PCB schematic/datasheet** (needed for pin mapping, peripherals, etc.)
 - [ ] (Optional) ARM Cortex-M0 Technical Reference Manual ([link](https://developer.arm.com/documentation/ddi0432/c/))
 
 **Action:**
-- Try to obtain the PB-03 board datasheet or schematic from the vendor or hardware team.
-- If not available, document any pin mapping or board quirks you discover during bring-up in `PLAN.md` or a new `NOTES.md`.
+- Try to obtain the PB-03 module and custom PCB schematics/datasheets.
+- If not available, document any pin mapping or board quirks you discover during bring-up in `docs/pcb.md`, `PLAN.md`, or a new `NOTES.md`.
 
 ---
 
